@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pokédex</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+ 
+  <style>
+  .modal {
+      z-index: 1060; /* Assicura che i modal siano sopra l'overlay */
+    }
+	
+    #griglia-pokemon {
+      height: 600px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background: #f9f9f9;
+    }
+    .pokemon-card {
+      width: 120px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      background: white;
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .pokemon-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgb(0 0 0 / 0.2);
+    }
+    .pokemon-card img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      margin-bottom: 6px;
+    }
+    .form-text-hint {
+      font-size: 0.8rem;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="home.html">PokéProgetto</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="home.html">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="pokedex.html">Pokédex</a></li>
+        <li class="nav-item"><a class="nav-link" href="arena.html">Arena</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <input type="text" id="search" class="form-control w-auto" placeholder="Cerca Pokémon per nome o id" />
+    <button class="btn btn-primary" onclick="cercaPokemon()">Cerca</button>
+    <button class="btn btn-secondary" onclick="resetFiltro()">Mostra tutti</button>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#aggiungiModal">Aggiungi</button>
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modificaModal">Modifica</button>
+    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminaModal">Elimina</button>
+  </div>
+
+  <div id="griglia-pokemon"></div>
+</div>
+
+<!-- Modal Aggiungi Pokémon -->
+<div class="modal fade" id="aggiungiModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #198754; color: white;">
+        <h5 class="modal-title">Aggiungi nuovo Pokémon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formAggiungi">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">ID</label>
+              <input type="number" class="form-control" name="#" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nome</label>
+              <input type="text" class="form-control" name="Name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo 1</label>
+              <input type="text" class="form-control" name="Type 1" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo 2</label>
+              <input type="text" class="form-control" name="Type 2">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">HP</label>
+              <input type="number" class="form-control" name="HP" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Attack</label>
+              <input type="number" class="form-control" name="Attack" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Defense</label>
+              <input type="number" class="form-control" name="Defense" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">URL Immagine (Sprite)</label>
+              <input type="text" class="form-control" name="sprites" 
+                     
+              
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary" onclick="aggiungiPokemon()">Salva Pokémon</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-- Modal Elimina Pokémon -->
+<div class="modal fade" id="eliminaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Elimina Pokémon</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Inserisci ID o Nome del Pokémon da eliminare</label>
+          <input type="text" class="form-control" id="eliminaQuery" placeholder="Es: 25 o Pikachu">
+        </div>
+        <div id="pokemonDaEliminare" class="text-center mt-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" onclick="confermaEliminazione()">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal Modifica Pokémon -->
+<div class="modal fade" id="modificaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">Modifica Pokémon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Campo di ricerca per trovare il Pokémon -->
+        <div class="mb-3">
+          <label for="modificaQuery" class="form-label">Inserisci ID o Nome del Pokémon da modificare</label>
+          <input type="text" class="form-control" id="modificaQuery" placeholder="Es: 25 o Pikachu">
+        </div>
+
+        <!-- Qui compariranno i campi da modificare, popolati dinamicamente -->
+        <div id="pokemonDaModificare" class="mt-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-warning" onclick="confermaModifica()">Salva Modifiche</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Funzione che crea la card html di un singolo Pokémon
+  function creaCardPokemon(pokemon) {
+    let sprite = "images/default.png"; // Valore di default
+    
+    // Se esiste la proprietà sprites e non è vuota
+    if (pokemon.sprites) {
+        try {
+            // Se è già un oggetto, usalo direttamente
+            if (typeof pokemon.sprites === 'object') {
+                sprite = pokemon.sprites.animated || sprite;
+            } 
+            // Se è una stringa, prova a parsarla
+            else if (typeof pokemon.sprites === 'string') {
+                const spritesObj = JSON.parse(pokemon.sprites.replace(/'/g, '"'));
+                sprite = spritesObj.animated || sprite;
+            }
+        } catch (e) {
+            console.warn("Errore parsing sprite:", e);
+            // Mantieni il valore di default
+        }
+    }
+
+    return `
+      <div class="pokemon-card" title="${pokemon.Name} (#${pokemon['#']})">
+        <img src="${sprite}" alt="${pokemon.Name}" onerror="this.src='images/default.png'">
+        <div><strong>${pokemon.Name}</strong></div>
+        <small>${pokemon['Type 1']}${pokemon['Type 2'] ? ' / ' + pokemon['Type 2'] : ''}</small>
+      </div>
+    `;
+}
+
+  // Mostra tutti i Pokémon nella griglia
+  function mostraTuttiPokemon() {
+    fetch('/api/pokemon')
+      .then(res => res.json())
+      .then(data => {
+        const griglia = document.getElementById('griglia-pokemon');
+        griglia.innerHTML = data.map(creaCardPokemon).join('');
+      })
+      .catch(err => {
+        document.getElementById('griglia-pokemon').innerHTML = `<p class="text-danger">Errore caricamento Pokémon</p>`;
+      });
+  }
+
+  function cercaPokemon() {
+	  const query = document.getElementById('search').value.trim();
+	  if (!query) {
+		// campo vuoto => mostra tutti
+		mostraTuttiPokemon();
+		return;
+	  }
+
+	  const isNumber = /^\d+$/.test(query);
+	  const url = isNumber
+		? `/api/pokemon/${query}`
+		: `/api/pokemon/nome/${query.toLowerCase()}`;
+
+	  fetch(url)
+		.then(res => {
+			  if (!res.ok) throw new Error('Pokémon non trovato');
+			  return res.json();
+		})
+		.then(data => {
+			  const griglia = document.getElementById('griglia-pokemon');
+			  griglia.innerHTML = creaCardPokemon(data);
+		})
+		.catch(err => {
+			  alert(err.message);   
+			  document.getElementById('griglia-pokemon').innerHTML = '';
+		});
+}
+
+
+  // Reset filtro e mostra tutti
+  function resetFiltro() {
+		document.getElementById('search').value = '';
+		mostraTuttiPokemon();
+  }
+
+  // Aggiungi un nuovo Pokémon
+  async function aggiungiPokemon() {
+    const form = document.getElementById('formAggiungi');
+    const formData = new FormData(form);
+    const pokemonData = {};
+    
+    // Converti FormData in oggetto
+    formData.forEach((value, key) => {
+		if (value !== '') pokemonData[key] = isNaN(value) ? value : Number(value);
+    });
+
+    // Formatta le sprites come stringa JSON
+    if (pokemonData.sprites) {
+		try {
+			pokemonData.sprites = JSON.stringify(JSON.parse(pokemonData.sprites));
+		} catch (e) {
+			alert("Formato sprite non valido! Usa formato JSON come nell'esempio");
+			return;
+      }
+    }
+
+    try {
+      const response = await fetch('/api/pokemon', {
+        method: 'POST',
+        headers: {
+			'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pokemonData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Errore nel salvataggio');
+      }
+      
+      const result = await response.json();
+      alert(`Pokémon ${result.data.Name} aggiunto con successo!`);
+      
+      // Chiudi il modal, resetta il form e aggiorna la lista
+      bootstrap.Modal.getInstance(document.getElementById('aggiungiModal')).hide();
+      form.reset();
+      mostraTuttiPokemon();
+      
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  // Carica all'apertura
+  window.onload = mostraTuttiPokemon;
+  
+  // Mostra l'anteprima del Pokémon da eliminare
+document.getElementById('eliminaQuery').addEventListener('input', async function() {
+  const query = this.value.trim();
+  if (!query) {
+    document.getElementById('pokemonDaEliminare').innerHTML = '';
+    return;
+  }
+
+  try {
+    const pokemon = await getPokemon(query);
+    document.getElementById('pokemonDaEliminare').innerHTML = `
+      <div class="card mx-auto" style="width: 150px;">
+        <img src="${pokemon.sprites.animated || 'images/default.png'}" 
+             class="card-img-top" 
+             onerror="this.src='images/default.png'">
+        <div class="card-body">
+          <h5 class="card-title">${pokemon.Name}</h5>
+          <p class="card-text">#${pokemon['#']}</p>
+        </div>
+      </div>
+      <p class="mt-2">Sei sicuro di voler eliminare questo Pokémon?</p>
+    `;
+  } catch (error) {
+    document.getElementById('pokemonDaEliminare').innerHTML = `
+      <p class="text-danger">${error.message}</p>
+    `;
+  }
+});
+
+// Funzione per confermare l'eliminazione
+async function confermaEliminazione() {
+  const query = document.getElementById('eliminaQuery').value.trim();
+  if (!query) return alert("Inserisci un ID o nome Pokémon");
+
+  try {
+    // Prima verifichiamo che il Pokémon esista
+    const pokemon = await getPokemon(query);
+    
+    const response = await fetch(`/api/pokemon/${pokemon['#']}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) throw new Error('Errore durante l\'eliminazione');
+
+    const result = await response.json();
+    alert(`Pokémon ${result.data.Name} eliminato con successo!`);
+    
+    // Chiudi il modal e aggiorna la lista
+    bootstrap.Modal.getInstance(document.getElementById('eliminaModal')).hide();
+    mostraTuttiPokemon();
+    document.getElementById('eliminaQuery').value = '';
+    document.getElementById('pokemonDaEliminare').innerHTML = '';
+    
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+// Funzione per ottenere un pokemon (usata per l'eliminazione)
+async function getPokemon(query) {
+  const isNumber = /^\d+$/.test(query);
+  const url = isNumber ? `/api/pokemon/${query}` : `/api/pokemon/nome/${query.toLowerCase()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Pokémon non trovato");
+  const data = await res.json();
+  
+  // Gestione delle sprites
+  try {
+    if (typeof data.sprites === 'string') {
+      data.sprites = JSON.parse(data.sprites.replace(/'/g, '"'));
+    } else if (!data.sprites) {
+      data.sprites = { animated: "images/default.png" };
+    }
+  } catch (e) {
+    console.warn("Errore parsing sprite:", e);
+    data.sprites = { animated: "images/default.png" };
+  }
+  
+  return data;
+}
+
+//per modificare il modal
+  // Riascolta l’input di ricerca per il modal Modifica
+  document.getElementById('modificaQuery').addEventListener('input', async function() {
+    const query = this.value.trim();
+    const container = document.getElementById('pokemonDaModificare');
+
+    if (!query) {
+      container.innerHTML = '';
+      return;
+    }
+
+    try {
+      // Usa la stessa funzione getPokemon del modal Elimina
+      const pokemon = await getPokemon(query);
+
+      // Popola il form di modifica con i dati correnti
+      container.innerHTML = `
+        <form id="formModifica">
+          <input type="hidden" id="modifica-id" value="${pokemon['#']}" />
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nome</label>
+              <input type="text" class="form-control" id="modifica-nome" value="${pokemon.Name}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo 1</label>
+              <input type="text" class="form-control" id="modifica-type1" value="${pokemon['Type 1']}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo 2</label>
+              <input type="text" class="form-control" id="modifica-type2" value="${pokemon['Type 2'] || ''}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">HP</label>
+              <input type="number" class="form-control" id="modifica-hp" value="${pokemon.HP}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Attack</label>
+              <input type="number" class="form-control" id="modifica-attack" value="${pokemon.Attack}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Defense</label>
+              <input type="number" class="form-control" id="modifica-defense" value="${pokemon.Defense}" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">URL Immagine (Sprite JSON)</label>
+              <input type="text" class="form-control" id="modifica-sprites" value='${JSON.stringify(pokemon.sprites).replace(/"/g, '&quot;')}' placeholder='{"animated": "url"}'>
+              <div class="form-text form-text-hint">Formato: {"animated": "https://url"} </div>
+            </div>
+          </div>
+        </form>
+      `;
+    } catch (error) {
+      container.innerHTML = `<p class="text-danger">${error.message}</p>`;
+    }
+  });
+
+  // Funzione per inviare la PUT di modifica
+  async function confermaModifica() {
+    const id = document.getElementById('modifica-id').value;
+    if (!id) return alert("Nessun Pokémon selezionato per la modifica");
+
+    // Preleva i valori aggiornati
+    const updatedName = document.getElementById('modifica-nome').value.trim();
+    const updatedType1 = document.getElementById('modifica-type1').value.trim();
+    const updatedType2 = document.getElementById('modifica-type2').value.trim();
+    const updatedHP = parseInt(document.getElementById('modifica-hp').value);
+    const updatedAttack = parseInt(document.getElementById('modifica-attack').value);
+    const updatedDefense = parseInt(document.getElementById('modifica-defense').value);
+    let updatedSpritesRaw = document.getElementById('modifica-sprites').value.trim();
+
+    // Controlli basilari
+    if (!updatedName || !updatedType1 || isNaN(updatedHP) || isNaN(updatedAttack) || isNaN(updatedDefense)) {
+      return alert("Compila tutti i campi obbligatori correttamente");
+    }
+
+    // Proviamo a fare il parsing del campo sprites
+    let spritesValue;
+    try {
+      // Se l'utente ha già fornito un JSON, lo converto in stringa standard
+      const temp = JSON.parse(updatedSpritesRaw.replace(/'/g, '"'));
+      spritesValue = JSON.stringify(temp);
+    } catch {
+      // Altrimenti, manteniamo il valore già corretto o facciamo fallback
+      spritesValue = '{"animated":"images/default.png"}';
+    }
+
+    // Costruiamo l'oggetto da inviare
+    const modifiedPokemon = {
+      "#": Number(id),
+      Name: updatedName,
+      "Type 1": updatedType1,
+      "Type 2": updatedType2 || null,
+      HP: updatedHP,
+      Attack: updatedAttack,
+      Defense: updatedDefense,
+      sprites: spritesValue
+    };
+
+    try {
+      const response = await fetch(`/api/pokemon/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(modifiedPokemon)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Errore nella modifica");
+      }
+
+      const result = await response.json();
+      alert(`Pokémon #${id} (${result.data.Name}) modificato con successo!`);
+
+      // Chiudi il modal e aggiorna la lista
+      bootstrap.Modal.getInstance(document.getElementById('modificaModal')).hide();
+      mostraTuttiPokemon();
+      // Pulisci form di ricerca/modifica
+      document.getElementById('modificaQuery').value = '';
+      document.getElementById('pokemonDaModificare').innerHTML = '';
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+</script>
+
+</body>
+</html>
